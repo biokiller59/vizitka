@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>made by rovy — сайты с анимацией</title>
+<meta name="description" content="Визитка веб-разработчика: лендинги, визитки и сайты с записью. Анимации, 3D, адаптация под телефон.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050608;--cream:#f3ecdc;--text:#e9e6df;--mute:#9a9893;--line:rgba(255,255,255,.1);--dim:rgba(255,255,255,.22);--d:'Unbounded',sans-serif;--e:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box;margin:0}
+/* страница не прокручивается: экраны переключаются как слайды */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--text);font:400 16px/1.55 'Onest',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--cream);outline-offset:3px}
+#field{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;transition:opacity 1.6s ease-out,filter 1.2s var(--e)}
+.go #field{opacity:1}
+/* после первого экрана поле уходит в размытый фон */
+.deep #field{filter:blur(7px) brightness(.45)}
+.bar{position:fixed;inset:0 0 auto;height:2px;z-index:20;background:var(--cream);transform-origin:left;transform:scaleX(var(--sp,0));transition:transform 1.1s var(--e)}
+.wrap{width:min(1180px,100% - 40px);margin-inline:auto}
+
+header{position:fixed;inset:0 0 auto;z-index:10;border-bottom:1px solid transparent;opacity:0;transition:opacity 1.2s,background .8s,border-color .8s,backdrop-filter .8s}
+.ready header{opacity:1}
+/* без backdrop-filter: размывать каждый кадр анимированный canvas дорого, а фон за шапкой и так уже размыт */
+.deep header{border-color:var(--line);background:rgba(5,6,8,.72)}
+header .wrap{display:flex;align-items:center;gap:36px;height:62px}
+.logo{font:700 14px var(--d);margin-right:auto}
+nav{display:flex;gap:36px}
+nav a{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;transition:opacity .2s}
+nav a:hover{opacity:1}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--cream);color:#111;border-radius:99px;padding:13px 24px;font-weight:600;font-size:15px;transition:transform .4s var(--e),box-shadow .4s}
+.pill:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 10px 40px rgba(243,236,220,.25)}
+header .pill{padding:9px 20px;font-size:13px}
+
+/* слайд: будущий — чуть меньше, пройденный — крупнее, будто камера прошла сквозь него */
+.slide{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;padding-top:76px;overflow:hidden auto;scrollbar-width:none;
+  opacity:0;visibility:hidden;filter:blur(18px);transform:scale(.9);
+  transition:opacity .7s,filter .7s,transform 1.1s var(--e),visibility 0s .7s}
+.slide::-webkit-scrollbar{display:none}
+.slide.past{transform:scale(1.18)}
+.slide.act{opacity:1;visibility:visible;filter:none;transform:none;transition-delay:.3s,.3s,.3s,0s}
+.slide>:first-child{margin:auto;padding-block:20px}
+
+.hero{text-align:center}
+.hero h1{white-space:nowrap;font:800 clamp(30px,8.6vw,124px)/1.1 var(--d);letter-spacing:-.03em;color:#d6d6dc;text-shadow:0 1px 0 #a3a3ab,0 2px 0 #8a8a92,0 3px 0 #70707a,0 4px 0 #575760,0 5px 0 #3f3f47,0 14px 34px rgba(0,0,0,.85)}
+/* transform буквам задаёт скрипт (реакция на курсор), здесь только появление */
+.hero h1 span{display:inline-block;opacity:0;filter:blur(16px);transition:opacity 1.3s,filter 1.3s;transition-delay:calc(var(--i)*60ms);will-change:transform}
+.ready .hero h1 span{opacity:1;filter:none}
+.fade{opacity:0;filter:blur(8px);transform:translateY(16px);transition:opacity 1.3s,filter 1.3s,transform 1.3s var(--e),background .5s,color .5s,border-color .5s;transition-delay:.9s}
+.ready .fade{opacity:1;filter:none;transform:none}
+.hero p{width:fit-content;padding:10px 44px;background:radial-gradient(closest-side,rgba(5,6,8,.8),transparent);margin:8px auto 18px;font-size:clamp(14px,1.4vw,18px);font-weight:500;text-shadow:0 0 6px #000,0 2px 22px #000,0 0 40px #000}
+.down{display:inline-grid;place-items:center;width:46px;height:46px;border:1px solid rgba(255,255,255,.55);border-radius:50%;background:rgba(5,6,8,.35)}
+.down:hover{background:var(--cream);color:#111;border-color:var(--cream)}
+
+h2{font:800 clamp(30px,6.4vw,84px)/1.02 var(--d);letter-spacing:-.03em;text-shadow:0 4px 40px rgba(0,0,0,.8)}
+.lit span{color:var(--dim);transition:color .2s}
+.act .lit span{color:#fff;transition:color 1.1s var(--e) calc(var(--w)*130ms + .55s)}
+.act .lit span:nth-child(odd){color:var(--cream)}
+.center{text-align:center}
+/* содержимое слайда выезжает по очереди; после анимации hover работает как обычно */
+.act .rv{animation:rise 1.1s var(--e) backwards;animation-delay:calc(var(--n,0)*90ms + .5s)}
+@keyframes rise{from{opacity:0;filter:blur(10px);transform:translateY(44px)}}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+.card{position:relative;display:block;border:1px solid var(--line);border-radius:18px;background:rgba(16,17,21,.8);overflow:hidden;
+  transform:perspective(900px) translateY(var(--ty,0px)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .7s var(--e),border-color .5s,box-shadow .7s}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(340px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.1),transparent 60%);opacity:0;transition:opacity .6s;pointer-events:none}
+.card:hover{--ty:-8px;border-color:rgba(255,255,255,.3);box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.card:hover::before{opacity:1}
+.stack{position:relative;height:220px;border-bottom:1px solid var(--line)}
+.shot{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:16/11;border-radius:10px;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 40px rgba(0,0,0,.6);display:grid;place-items:center;font:700 clamp(11px,1.3vw,17px) var(--d);transition:transform .9s var(--e);transform:translate(-50%,-50%) translateX(var(--x,0)) rotate(var(--r,0deg)) scale(var(--s,1))}
+.shot:nth-child(1){--x:-52%;--r:-9deg;--s:.86}
+.shot:nth-child(2){--x:52%;--r:9deg;--s:.86}
+.card:hover .shot:nth-child(1){--x:-68%;--r:-13deg}
+.card:hover .shot:nth-child(2){--x:68%;--r:13deg}
+.card:hover .shot:nth-child(3){--s:1.08}
+.card .body{padding:20px 24px 24px;padding-right:76px}
+.card small{color:var(--mute);font-size:12px}
+.card h3{font:700 clamp(17px,1.7vw,21px) var(--d);margin:6px 0 8px}
+.card p{color:var(--mute);font-size:14px}
+.arr{position:absolute;right:22px;bottom:24px;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;display:grid;place-items:center;transition:.6s var(--e)}
+.card:hover .arr{background:var(--cream);color:#111;border-color:var(--cream);transform:rotate(-45deg)}
+
+.ph{display:flex;justify-content:space-between;align-items:end;gap:30px;flex-wrap:wrap;margin-bottom:30px}
+.ph p{color:var(--mute);max-width:21em;font-size:15px}
+.row{display:grid;grid-template-columns:1.1fr 1.6fr .6fr auto;gap:24px;align-items:center;padding:20px 0;border-top:1px solid var(--line);border-radius:10px;counter-increment:r;transition:background .6s,padding .6s var(--e)}
+#prices .wrap{counter-reset:r}
+.row b::before{content:"0" counter(r);font:500 11px 'Onest',sans-serif;color:var(--mute);margin-right:14px;vertical-align:middle;letter-spacing:.1em}
+.row:last-child{border-bottom:1px solid var(--line)}
+.row:hover{background:rgba(255,255,255,.06);padding-inline:14px}
+.row b{font:700 clamp(15px,1.6vw,20px) var(--d)}
+.row span{color:var(--mute);font-size:14px}
+.row i{font-style:normal;white-space:nowrap}
+.row em{font-style:normal;font-size:13px;white-space:nowrap;opacity:.7;transition:transform .6s var(--e),opacity .6s,color .6s}
+.row:hover em{transform:translateX(6px);opacity:1;color:var(--cream)}
+
+.steps{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:48px}
+.steps::before{content:"";position:absolute;inset:0 0 auto;height:1px;background:var(--cream);transform-origin:left;transform:scaleX(0)}
+.act .steps::before{transform:scaleX(1);transition:transform 1.6s var(--e) .7s}
+.step{border-top:1px solid var(--line);padding-top:22px}
+.step b{display:block;font:800 clamp(34px,4vw,50px)/1 var(--d);margin-bottom:24px}
+.step h3{font-weight:600;font-size:16px;margin-bottom:8px}
+.step p{color:var(--mute);font-size:14px}
+
+.facts{flex:none;border-top:1px solid var(--line);overflow:hidden;padding:14px 0;font-size:13px;color:var(--mute);white-space:nowrap}
+.facts div{display:inline-block;animation:mq 30s linear infinite}
+.facts span{margin-right:44px}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+.cta{text-align:center}
+.cta h2{font-size:clamp(36px,10vw,140px)}
+.cta p{margin:20px 0 30px;color:#bdbab4}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+footer{flex:none;border-top:1px solid var(--line);padding:20px;text-align:center;font-size:12px;color:var(--mute)}
+
+@media(max-width:860px){
+  nav{display:none}
+  .slide{padding-top:66px}
+  .cards{grid-template-columns:1fr;gap:10px;margin-top:22px}
+  .card{display:grid;grid-template-columns:118px 1fr}
+  .stack{height:auto;min-height:104px;border-bottom:0;border-right:1px solid var(--line)}
+  .shot{width:58%;font-size:10px}
+  .card .body{padding:14px 16px}
+  .card p{font-size:13px}
+  .arr,.ph p,.row em{display:none}
+  .ph{margin-bottom:18px}
+  .row{grid-template-columns:1fr auto;gap:4px 16px;padding:13px 0}
+  .row span{grid-column:1/-1;font-size:13px}
+  .steps{grid-template-columns:1fr 1fr;margin-top:26px}
+  .step b{margin-bottom:14px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="bar" aria-hidden="true"></div>
+
+<header><div class="wrap">
+  <a class="logo" href="#top">made by rovy</a>
+  <nav><a href="#works">Работы</a><a href="#prices">Цены</a><a href="#how">Как работаю</a></nav>
+  <a class="pill" href="#contact">Написать</a>
+</div></header>
+
+<main>
+<section class="slide hero act" id="top">
+  <div>
+    <h1 aria-label="made by rovy">made by rovy</h1>
+    <p class="fade">Сайты, которые хочется листать:<br>лендинги и визитки с&nbsp;анимацией</p>
+    <a class="down fade" href="#works" aria-label="Дальше, к работам">↓</a>
+  </div>
+</section>
+
+<section class="slide" id="works"><div class="wrap">
+  <h2 class="center lit">мои работы</h2>
+  <div class="cards">
+    <a class="card rv" href="https://biokiller59.github.io/meridian-pulse/" target="_blank" rel="noopener">
+      <div class="stack">
+        <div class="shot" style="background:linear-gradient(135deg,#1a1033,#3b1d6e)">3D</div>
+        <div class="shot" style="background:linear-gradient(135deg,#0d1b2a,#1b4965)">pulse</div>
+        <div class="shot" style="background:radial-gradient(circle at 50% 40%,#3a2a6b,#0b0b12 70%)">Meridian</div>
+      </div>
+      <div class="body"><small>лендинг · 3D-модель</small><h3>Лендинг товара</h3><p>Умные часы с настоящей 3D-моделью, которая крутится при прокрутке.</p></div>
+      <span class="arr">→</span>
+    </a>
+    <a class="card rv" style="--n:1" href="https://biokiller59.github.io/os-pilates/" target="_blank" rel="noopener">
+      <div class="stack">
+        <div class="shot" style="background:#c7b5ff;color:#0e1f17">мат</div>
+        <div class="shot" style="background:#ff6a3d;color:#0e1f17">900 ₽</div>
+        <div class="shot" style="background:#cdfb4b;color:#0e1f17">ОСЬ</div>
+      </div>
+      <div class="body"><small>сайт с записью</small><h3>Студия пилатеса</h3><p>Расписание на неделю и запись на занятие прямо на странице.</p></div>
+      <span class="arr">→</span>
+    </a>
+    <a class="card rv" style="--n:2" href="#top">
+      <div class="stack">
+        <div class="shot" style="background:#141418">✿</div>
+        <div class="shot" style="background:#141418">✿ ✿</div>
+        <div class="shot" style="background:linear-gradient(180deg,#050507,#26262c)">rovy</div>
+      </div>
+      <div class="body"><small>визитка · ты здесь</small><h3>Сайт-визитка</h3><p>Эта страница: поле цветов, которое расступается под курсором.</p></div>
+      <span class="arr">→</span>
+    </a>
+  </div>
+</div></section>
+
+<section class="slide" id="prices"><div class="wrap">
+  <div class="ph"><h2 class="lit">сколько стоит</h2><p>Точная цена зависит от задачи — напиши, что нужно, и я посчитаю.</p></div>
+  <a class="row rv" href="#contact"><b>визитка</b><span>Одна страница о тебе или твоём деле: кто, что, сколько и куда писать.</span><i>от 3 000 ₽</i><em>заказать →</em></a>
+  <a class="row rv" style="--n:1" href="#contact"><b>лендинг</b><span>Продающая страница товара или услуги с анимацией и формой заявки.</span><i>от 7 000 ₽</i><em>заказать →</em></a>
+  <a class="row rv" style="--n:2" href="#contact"><b>сайт с записью</b><span>Расписание, выбор времени и запись — как у студии пилатеса.</span><i>от 10 000 ₽</i><em>заказать →</em></a>
+  <a class="row rv" style="--n:3" href="#contact"><b>анимация и 3D</b><span>Оживлю готовый сайт: появление блоков, эффекты, 3D-модель.</span><i>от 2 000 ₽</i><em>заказать →</em></a>
+  <a class="row rv" style="--n:4" href="#contact"><b>правки</b><span>Починю вёрстку, адаптирую под телефон, ускорю загрузку.</span><i>от 500 ₽</i><em>заказать →</em></a>
+  <a class="row rv" style="--n:5" href="#contact"><b>своя идея</b><span>Чего-то нет в списке? Опиши — посчитаю под задачу.</span><i>по запросу</i><em>написать →</em></a>
+</div></section>
+
+<section class="slide" id="how">
+  <div class="wrap">
+    <h2 class="lit">как я работаю</h2>
+    <div class="steps">
+      <div class="step rv"><b>01</b><h3>Заявка</h3><p>Пишешь, что нужно: тема, примеры, которые нравятся, сроки.</p></div>
+      <div class="step rv" style="--n:1"><b>02</b><h3>Предоплата</h3><p>Обсуждаем детали и цену. Оплата через Kwork — деньги под защитой.</p></div>
+      <div class="step rv" style="--n:2"><b>03</b><h3>Черновик и правки</h3><p>Показываю живую ссылку. Правлю, пока не понравится.</p></div>
+      <div class="step rv" style="--n:3"><b>04</b><h3>Готовый сайт</h3><p>Выкладываю в интернет и отдаю файлы. Открывается с телефона и компьютера.</p></div>
+    </div>
+  </div>
+  <div class="facts" aria-hidden="true"><div id="facts"><span>✿ обычно — за 2–3 дня</span><span>✿ адаптация под телефон</span><span>✿ правки включены</span><span>✿ без шаблонов и конструкторов</span><span>✿ выкладываю на хостинг</span></div></div>
+</section>
+
+<section class="slide cta" id="contact">
+  <div>
+    <h2 class="lit">есть проект?</h2>
+    <p class="rv">Напиши, что нужно, — отвечу с идеей и сроками.</p>
+    <!-- shortcut: ссылка ведёт на главную Kwork, заменить на адрес своего профиля -->
+    <div class="btns rv" style="--n:1"><a class="pill" href="https://kwork.ru/" target="_blank" rel="noopener">Написать на Kwork ↗</a><a class="pill" href="https://github.com/biokiller59" target="_blank" rel="noopener">GitHub ↗</a></div>
+  </div>
+  <footer>made by rovy · 2026</footer>
+</section>
+</main>
+
+<script>
+const $$=s=>[...document.querySelectorAll(s)];
+const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+// заголовок режем на буквы: они появляются по одной и отодвигаются от курсора
+const h1=document.querySelector('h1');
+h1.innerHTML=[...h1.textContent].map((c,i)=>`<span aria-hidden="true" style="--i:${i}">${c===' '?'&nbsp;':c}</span>`).join('');
+const letters=[...h1.children].map(el=>({el,x:0,y:0,p:0,ax:0,ay:0,t:''}));
+function measure(){const r=h1.getBoundingClientRect();for(const L of letters){L.x=r.left+L.el.offsetLeft-h1.offsetLeft+L.el.offsetWidth/2;L.y=r.top+L.el.offsetTop-h1.offsetTop+L.el.offsetHeight/2}}
+
+// бегущая строка: дублируем содержимое, чтобы сдвиг на -50% был бесшовным
+facts.innerHTML+=facts.innerHTML;
+$$('.lit').forEach(h=>h.innerHTML=h.textContent.split(' ').map((w,i)=>`<span style="--w:${i}">${w}</span>`).join(' '));
+
+// ---- слайды ----
+const slides=$$('.slide');
+let idx=0,lock=0,boost=still?0:9,intro=still?0:1;
+const clamp=i=>Math.max(0,Math.min(slides.length-1,i));
+console.assert(clamp(-1)===0&&clamp(99)===slides.length-1&&clamp(2)===2,'clamp');
+function go(i){
+  i=clamp(i);if(i===idx)return;
+  idx=i;lock=performance.now()+1000;
+  if(!still)boost=Math.max(boost,6); // на переходе камера рывком летит вперёд
+  slides.forEach((s,k)=>{s.classList.toggle('act',k===i);s.classList.toggle('past',k<i)});
+  slides[i].scrollTop=0;
+  document.body.classList.toggle('deep',i>0);
+  document.body.style.setProperty('--sp',i/(slides.length-1));
+}
+// если слайд не влез в экран, его можно докрутить; переключаем только с края
+const edge=d=>{const s=slides[idx];return d>0?s.scrollTop+s.clientHeight>=s.scrollHeight-2:s.scrollTop<=0};
+addEventListener('wheel',e=>{const d=Math.sign(e.deltaY);if(Math.abs(e.deltaY)>8&&performance.now()>lock&&edge(d))go(idx+d)},{passive:true});
+let sy=0,se=[];
+addEventListener('touchstart',e=>{sy=e.touches[0].clientY;se=[edge(-1),edge(1)]},{passive:true});
+addEventListener('touchend',e=>{const d=sy-e.changedTouches[0].clientY;if(Math.abs(d)>50&&se[d>0?1:0])go(idx+Math.sign(d))},{passive:true});
+addEventListener('keydown',e=>{const k=e.key;
+  if(k==='ArrowDown'||k==='PageDown')go(idx+1);else if(k==='ArrowUp'||k==='PageUp')go(idx-1);else if(k==='Home')go(0);else if(k==='End')go(99)});
+addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;e.preventDefault();go(slides.findIndex(s=>s.id===a.hash.slice(1)))});
+
+// карточка наклоняется к курсору, блик идёт за ним
+$$('.card').forEach(c=>{
+  c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+    c.style.setProperty('--mx',x+'px');c.style.setProperty('--my',y+'px');
+    c.style.setProperty('--rx',(.5-y/r.height)*7+'deg');c.style.setProperty('--ry',(x/r.width-.5)*9+'deg')});
+  c.addEventListener('pointerleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')});
+});
+
+// ---- небо и поле цветов: ряды на «земле» в перспективе летят на зрителя и расступаются под курсором ----
+const cx=field.getContext('2d'), small=innerWidth<700;
+const ROWS=small?36:54, PER=small?44:100, ZF=13;
+const depth=(n,fr)=>(n+1-fr)/ROWS; // 0 — у самой камеры, 1 — горизонт
+const cv=s=>{const c=document.createElement('canvas');c.width=c.height=s;return c};
+const leafPath=(g,l,w)=>{g.beginPath();g.moveTo(0,0);g.quadraticCurveTo(-w,-l*.55,0,-l);g.quadraticCurveTo(w,-l*.55,0,0);g.fill()};
+
+// цветок рисуем один раз в спрайт: плоский, с округлыми лепестками, мягким свечением и цветным отливом от серединки
+function flower(n,l,w,tint){
+  const c=cv(128),g=c.getContext('2d');g.translate(64,64);
+  const gr=g.createRadialGradient(0,0,3,0,0,l);gr.addColorStop(0,tint||'#b4b6c0');gr.addColorStop(tint?.95:.5,'#fff');
+  g.fillStyle=gr;g.shadowColor=tint||'rgba(255,255,255,.6)';g.shadowBlur=7;
+  for(let i=0;i<n;i++){g.rotate(Math.PI*2/n);g.beginPath();g.ellipse(0,-l*.56,w,l*.46,0,0,7);g.fill()}
+  g.shadowBlur=0;g.fillStyle='rgba(90,92,104,.55)';g.beginPath();g.arc(0,0,4,0,7);g.fill();
+  return c;
+}
+// белые (широкий, «звёздочка», шестилепестковый) и с отливом: розовый, голубой, сиреневый
+const sprites=[flower(5,50,17),flower(5,52,11),flower(6,48,13),flower(5,50,17,'#f3a9d2'),flower(5,50,17,'#8fe0ee'),flower(5,50,16,'#c3b0ff')];
+// тёмный лист, лежит на земле между цветами
+sprites.push((()=>{const c=cv(64),g=c.getContext('2d');g.translate(32,60);
+  const lg=g.createLinearGradient(0,0,0,-56);lg.addColorStop(0,'#0e2a1c');lg.addColorStop(1,'#2f6347');g.fillStyle=lg;leafPath(g,56,15);return c})());
+const LEAF=sprites.length-1;
+// атлас: каждый спрайт заранее повёрнут на ANG углов в одной большой картинке.
+// так кадр рисуется без setTransform и из одной текстуры — примерно в 1,6 раза быстрее, а на вид то же самое
+const CELL=small?96:128,COLS=16,period=[5,5,6,5,5,5].map(p=>Math.PI*2/p).concat(Math.PI*2),steps=period.map((_,k)=>k===LEAF?48:24);
+const base=steps.map((_,k)=>steps.slice(0,k).reduce((a,b)=>a+b,0)),cells=base[LEAF]+steps[LEAF];
+const atlas=cv(1);atlas.width=COLS*CELL;atlas.height=Math.ceil(cells/COLS)*CELL;
+{const g=atlas.getContext('2d');sprites.forEach((sp,k)=>{for(let i=0;i<steps[k];i++){const c=base[k]+i;
+  g.setTransform(1,0,0,1,(c%COLS+.5)*CELL,(Math.floor(c/COLS)+.5)*CELL);g.rotate(i/steps[k]*period[k]);
+  g.globalAlpha=k===LEAF?.75:1;g.drawImage(sp,-CELL/2,-CELL/2,CELL,CELL)}})}
+const cellOf=(k,a)=>{const n=steps[k];return base[k]+((Math.round(a/period[k]*n)%n)+n)%n};
+console.assert(cellOf(0,0)===0&&cellOf(0,period[0])===0&&cellOf(LEAF,-.01)===base[LEAF],'cellOf');
+
+const rnd=Math.random;
+const rows=Array.from({length:ROWS},()=>Array.from({length:PER},()=>{const q=rnd();return{x:(rnd()*2-1)*ZF*.62,dz:rnd(),r:rnd()*6.3,s:.55+rnd()*.9,ph:rnd()*6.3,k:q<.2?LEAF:q<.5?0:q<.68?1:q<.8?2:q<.87?3:q<.94?4:5}}));
+const stars=Array.from({length:small?90:200},()=>[rnd(),rnd(),.4+rnd()*rnd()*1.6,.25+rnd()*.7]);
+const sky=document.createElement('canvas');
+let W,H,dpr,mx=0,my=0,tx=0,ty=0,hole=0,holeT=0,last=0,T=0,fly=0,cam=0,camY=0;
+function size(){
+  dpr=Math.min(devicePixelRatio||1,1.5);W=field.width=sky.width=innerWidth*dpr;H=field.height=sky.height=innerHeight*dpr;
+  // небо статичное: градиент и звёзды рисуем один раз
+  const g=sky.getContext('2d'),gr=g.createLinearGradient(0,0,0,H);
+  gr.addColorStop(0,'#03040a');gr.addColorStop(.3,'#0c111f');gr.addColorStop(.42,'#141b2e');gr.addColorStop(1,'#0a0e18');
+  g.fillStyle=gr;g.fillRect(0,0,W,H);g.fillStyle='#fff';
+  for(const [x,y,r,a] of stars){g.globalAlpha=a;g.beginPath();g.arc(x*W,y*H,r*dpr,0,7);g.fill()}
+  g.globalAlpha=1;measure();
+}
+addEventListener('resize',size);size();
+document.fonts&&document.fonts.ready.then(measure);
+addEventListener('pointermove',e=>{tx=e.clientX*dpr;ty=e.clientY*dpr;if(!holeT){mx=tx;my=ty}holeT=1},{passive:true});
+// палец убрали или мышь ушла — «дыра» плавно затягивается
+for(const ev of ['pointerup','pointercancel'])addEventListener(ev,e=>e.pointerType!=='mouse'&&(holeT=0),{passive:true});
+document.documentElement.addEventListener('pointerleave',()=>holeT=0);
+
+let skip=0,cost=0,q=1,qt=0,raf=0;
+function draw(ms){
+  if(!still&&!document.hidden)raf=requestAnimationFrame(draw);
+  const t0=performance.now();
+  // на остальных слайдах поле размыто и затемнено — 30 кадров там не отличить от 60, а нагрузка вдвое меньше
+  if(idx>0&&(skip^=1))return;
+  const dt=Math.max(0,Math.min(.05,(ms-last)/1000||0));last=ms; // после паузы вкладки время не «прыгает»
+  // слабое устройство: если сам кадр рисуется дольше 11 мс, рисуем меньше цветов; на быстром q остаётся 1.
+  // меряем время отрисовки, а не fps — иначе экономия батареи (30 fps) зря урезала бы поле
+  if((qt+=dt)>1){qt=0;q=cost>11?Math.max(.45,q-.1):cost<7?Math.min(1,q+.05):q}
+  const per=Math.round(PER*q);
+  const ease=k=>1-Math.exp(-dt*k);
+  boost-=boost*ease(1.5);intro-=intro*ease(1.5);
+  T+=dt;fly+=dt*(1.2+boost); // камера всё время летит вперёд
+  const fl=Math.floor(fly),fr=fly-fl;
+  mx+=(tx-mx)*ease(7);my+=(ty-my)*ease(7);hole+=(holeT-hole)*ease(3.5);
+  cam+=((holeT?tx/W-.5:0)-cam)*ease(1.8);camY+=((holeT?ty/H-.5:0)-camY)*ease(1.8); // камера чуть следит за курсором
+
+  // буквы заголовка отодвигаются от курсора и чуть вырастают
+  if(idx===0)for(const L of letters){
+    const dx=L.x-mx/dpr,dy=L.y-my/dpr,d=Math.hypot(dx,dy)||1,R=Math.max(120,innerWidth*.13);
+    let p=Math.max(0,1-d/R)*hole;p=p*p*(3-2*p);
+    const k=ease(9);L.p+=(p-L.p)*k;L.ax+=(dx/d*p*R*.16-L.ax)*k;L.ay+=(dy/d*p*R*.16-L.ay)*k;
+    const t=L.p<.002?'':`translate(${L.ax.toFixed(1)}px,${L.ay.toFixed(1)}px) rotate(${(L.ax*.5).toFixed(1)}deg) scale(${(1+L.p*.22).toFixed(3)})`;
+    if(t!==L.t)L.el.style.transform=L.t=t; // трогаем стиль только когда он поменялся
+  }
+
+  cx.setTransform(1,0,0,1,0,0);cx.globalAlpha=1;cx.drawImage(sky,0,0);
+  // в начале камера смотрит в небо и опускается к полю
+  const y0=H*(.3+intro*.6-camY*.03),vx=W/2-cam*W*.05,F=W*.75,R=190*dpr,unit=Math.max(W,H*1.3)/34;
+  const gg=cx.createLinearGradient(0,y0-H*.02,0,y0+H*.1);gg.addColorStop(0,'rgba(5,6,8,0)');gg.addColorStop(1,'#050608');
+  cx.fillStyle=gg;cx.fillRect(0,y0-H*.02,W,H);
+  for(let n=ROWS-1;n>=0;n--){
+    const row=rows[(n+fl)%ROWS],u=depth(n,fr);
+    const al=Math.min(1,(1-u)*2.4)*Math.min(1,u*30); // прозрачность зависит только от ряда
+    if(al<.01)continue;
+    cx.globalAlpha=al;
+    for(let j=0;j<per;j++){
+      const f=row[j];
+      const z=1+(u+f.dz/ROWS)**1.5*(ZF-1); // степень сгущает ряды ближе к камере, иначе середина поля пустая
+      const gust=Math.sin(T*.7-f.x*.45+z*.35); // волна ветра идёт по полю
+      let sx=vx+f.x*F/z+gust*6*dpr/z;
+      if(sx<-80||sx>W+80)continue;
+      let sy=y0+H*.82/z-(Math.sin(f.x*.55+T*.3)*.5+f.x*f.x*.05)*H*.037; // пологие холмы, к краям поле загибается вверх
+      let s=unit*f.s/z*2.3;
+      const dx=sx-mx,dy=sy-my,d=Math.hypot(dx,dy);
+      if(d<R){let p=1-d/R;p=p*p*(3-2*p)*hole;sx+=dx/(d||1)*p*60*dpr;sy+=dy/(d||1)*p*60*dpr;s*=1-p*.9}
+      if(s<2.4*dpr||sy-s>H)continue; // совсем далёкие не рисуем, чтобы не рябили точками
+      const c=cellOf(f.k,f.r+gust*.3);
+      cx.drawImage(atlas,c%COLS*CELL,Math.floor(c/COLS)*CELL,CELL,CELL,sx-s/2,sy-s/2,s,s);
+    }
+  }
+  cost+=(performance.now()-t0-cost)*.1;
+}
+document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(raf);if(!document.hidden&&!still)raf=requestAnimationFrame(draw)});
+requestAnimationFrame(draw);
+
+// заставка: сначала проявляется поле, потом текст
+requestAnimationFrame(()=>document.body.classList.add('go'));
+setTimeout(()=>document.body.classList.add('ready'),still?0:1500);
+</script>
+</body>
+</html>
