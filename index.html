@@ -322,8 +322,8 @@ const stars=Array.from({length:small?90:200},()=>[rnd(),rnd(),.4+rnd()*rnd()*1.6
 const sky=document.createElement('canvas');
 let W,H,dpr,mx=0,my=0,tx=0,ty=0,hole=0,holeT=0,last=0,T=0,fly=0,cam=0,camY=0;
 function size(){
-  // на телефоне после первого экрана поле рисуется в 1/5 разрешения: растянутое, оно выглядит размытым, как blur(7px), но почти ничего не стоит
-  const d=Math.min(devicePixelRatio||1,1.5)*(small&&idx>0?.3:1);
+  // на телефоне после первого экрана поле рисуется ~1 пиксель канваса на точку экрана: дешевле, а пикселей ещё не видно (при 1/5 цветы становились «квадратными»)
+  const d=Math.min(devicePixelRatio||1,1.5)*(small&&idx>0?.6:1);
   if(d===dpr&&W===innerWidth*d&&H===innerHeight*d)return; // мобильный браузер шлёт resize и без изменения размера
   const k=dpr?d/dpr:1;tx*=k;ty*=k;mx*=k;my*=k;dpr=d;W=field.width=sky.width=innerWidth*dpr;H=field.height=sky.height=innerHeight*dpr;
   // небо статичное: градиент и звёзды рисуем один раз
