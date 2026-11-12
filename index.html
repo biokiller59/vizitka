@@ -133,6 +133,13 @@ footer{flex:none;border-top:1px solid var(--line);padding:20px;text-align:center
   .steps{grid-template-columns:1fr 1fr;margin-top:26px}
   .step b{margin-bottom:14px}
 }
+/* телефон: размытие (filter: blur) на весь экран во время перехода — главная причина подтормаживаний.
+   слайды переключаются только прозрачностью и масштабом, а поле размывает сам скрипт: рисует его в низком разрешении */
+@media(max-width:699px){
+  .slide{filter:none}
+  @keyframes rise{from{opacity:0;transform:translateY(44px)}}
+  .deep #field{filter:none;opacity:.45}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -247,6 +254,7 @@ function go(i){
   if(!still)boost=Math.max(boost,6); // на переходе камера рывком летит вперёд
   slides.forEach((s,k)=>{s.classList.toggle('act',k===i);s.classList.toggle('past',k<i)});
   slides[i].scrollTop=0;
+  if(small&&document.body.classList.contains('deep')!==i>0)setTimeout(size,350); // на телефоне меняем разрешение поля, пока старый слайд уходит
   document.body.classList.toggle('deep',i>0);
   document.body.style.setProperty('--sp',i/(slides.length-1));
 }
@@ -307,7 +315,10 @@ const stars=Array.from({length:small?90:200},()=>[rnd(),rnd(),.4+rnd()*rnd()*1.6
 const sky=document.createElement('canvas');
 let W,H,dpr,mx=0,my=0,tx=0,ty=0,hole=0,holeT=0,last=0,T=0,fly=0,cam=0,camY=0;
 function size(){
-  dpr=Math.min(devicePixelRatio||1,1.5);W=field.width=sky.width=innerWidth*dpr;H=field.height=sky.height=innerHeight*dpr;
+  // на телефоне после первого экрана поле рисуется в 1/5 разрешения: растянутое, оно выглядит размытым, как blur(7px), но почти ничего не стоит
+  const d=Math.min(devicePixelRatio||1,1.5)*(small&&idx>0?.3:1);
+  if(d===dpr&&W===innerWidth*d&&H===innerHeight*d)return; // мобильный браузер шлёт resize и без изменения размера
+  const k=dpr?d/dpr:1;tx*=k;ty*=k;mx*=k;my*=k;dpr=d;W=field.width=sky.width=innerWidth*dpr;H=field.height=sky.height=innerHeight*dpr;
   // небо статичное: градиент и звёзды рисуем один раз
   const g=sky.getContext('2d'),gr=g.createLinearGradient(0,0,0,H);
   gr.addColorStop(0,'#03040a');gr.addColorStop(.3,'#0c111f');gr.addColorStop(.42,'#141b2e');gr.addColorStop(1,'#0a0e18');
