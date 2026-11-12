@@ -139,6 +139,10 @@ footer{flex:none;border-top:1px solid var(--line);padding:20px;text-align:center
   .slide{filter:none}
   @keyframes rise{from{opacity:0;transform:translateY(44px)}}
   .deep #field{filter:none;opacity:.45}
+  /* заставка: буквы и подпись проявляются без размытия — блюр 14 букв разом и подтормаживал первый экран */
+  .hero h1 span,.fade{filter:none}
+  .hero h1 span{transform:translateY(.35em);transition:opacity 1.1s,transform 1.1s var(--e);transition-delay:calc(var(--i)*60ms);will-change:auto}
+  .ready .hero h1 span{transform:none}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -333,16 +337,17 @@ addEventListener('pointermove',e=>{tx=e.clientX*dpr;ty=e.clientY*dpr;if(!holeT){
 for(const ev of ['pointerup','pointercancel'])addEventListener(ev,e=>e.pointerType!=='mouse'&&(holeT=0),{passive:true});
 document.documentElement.addEventListener('pointerleave',()=>holeT=0);
 
-let skip=0,cost=0,q=1,qt=0,raf=0;
+let cost=0,q=1,qt=0,raf=0;
 function draw(ms){
   if(!still&&!document.hidden)raf=requestAnimationFrame(draw);
   const t0=performance.now();
-  // на остальных слайдах поле размыто и затемнено — 30 кадров там не отличить от 60, а нагрузка вдвое меньше
-  if(idx>0&&(skip^=1))return;
+  // поле рисуем не чаще 60 раз в секунду (у телефонов на 90/120 Гц rAF приходит вдвое чаще, а кадр не успевает),
+  // а на остальных слайдах, где оно размыто и затемнено, — 30
+  if(ms-last<(idx>0?28:12))return;
   const dt=Math.max(0,Math.min(.05,(ms-last)/1000||0));last=ms; // после паузы вкладки время не «прыгает»
-  // слабое устройство: если сам кадр рисуется дольше 11 мс, рисуем меньше цветов; на быстром q остаётся 1.
+  // слабое устройство: если сам кадр рисуется дольше 9 мс, рисуем меньше цветов; на быстром q остаётся 1.
   // меряем время отрисовки, а не fps — иначе экономия батареи (30 fps) зря урезала бы поле
-  if((qt+=dt)>1){qt=0;q=cost>11?Math.max(.45,q-.1):cost<7?Math.min(1,q+.05):q}
+  if((qt+=dt)>.5){qt=0;q=cost>9?Math.max(.45,q-.1):cost<5?Math.min(1,q+.05):q}
   const per=Math.round(PER*q);
   const ease=k=>1-Math.exp(-dt*k);
   boost-=boost*ease(1.5);intro-=intro*ease(1.5);
